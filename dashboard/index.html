@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>銷售數據儀表板</title>
+<style>
+:root{
+  --bg:#f2f4f8; --card:#ffffff; --ink:#1b2430; --dim:#5b6675; --line:#dde3ec;
+  --brand:#1d4ed8; --brand-soft:#e3ecff; --ok:#0e9f6e; --warn:#d97706; --bad:#dc2626;
+  --bar:#3b82f6; --bar2:#8b5cf6; --bar3:#0ea5e9;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang HK","Microsoft JhengHei",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
+header{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+header h1{font-size:24px;letter-spacing:-.01em}
+header .meta{margin-top:8px;color:var(--dim);font-size:14px;display:flex;flex-wrap:wrap;gap:6px 22px}
+header .meta b{color:var(--ink);font-weight:600}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px}
+section.card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+section.card h2 .tag{font-size:12px;font-weight:600;color:var(--brand);background:var(--brand-soft);border-radius:6px;padding:2px 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kpi .k-label{font-size:13px;color:var(--dim)}
+.kpi .k-value{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.kpi .k-sub{font-size:12px;color:var(--dim);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.filters label{font-size:13px;color:var(--dim);display:flex;flex-direction:column;gap:4px}
+.filters select{font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:130px}
+.filters button{font-size:14px;padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+.filters button:hover{background:var(--brand-soft);border-color:var(--brand)}
+.chart-box{position:relative}
+.chart-box svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:13px;color:var(--dim)}
+.legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.tooltip{position:fixed;pointer-events:none;background:#10151d;color:#fff;font-size:12.5px;padding:7px 10px;border-radius:8px;opacity:0;transition:opacity .12s;z-index:50;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.insight{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:12px 14px;font-size:14px;background:#fbfcfe}
+.insight.warn{border-left-color:var(--warn)}
+.insight.bad{border-left-color:var(--bad)}
+.insight.ok{border-left-color:var(--ok)}
+.insight h3{font-size:14px;margin-bottom:4px}
+.insight p{color:var(--dim);font-size:13px}
+.table-tools{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.table-tools input{flex:1;min-width:200px;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:8px}
+.table-scroll{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 11px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){text-align:left}
+th{background:#f6f8fb;position:sticky;top:0;cursor:pointer;user-select:none;font-weight:600;color:var(--ink)}
+th:hover{background:var(--brand-soft)}
+th .arrow{font-size:10px;color:var(--brand)}
+tbody tr:hover{background:#f8fafd}
+tfoot td{font-weight:700;background:#f6f8fb}
+.note{font-size:13px;color:var(--dim);margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.note ul{padding-left:18px;margin-top:6px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media print{
+  body{background:#fff}
+  .filters,.table-tools,.tooltip{display:none!important}
+  .table-scroll{max-height:none;overflow:visible}
+  section.card,.kpi{break-inside:avoid;border:1px solid #ccc;box-shadow:none}
+  .wrap{max-width:100%;padding:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>銷售數據儀表板</h1>
+  <div class="meta">
+    <span><b>目的：</b>呈現銷售表現、趨勢、市場分布及毛利狀況，支援管理層檢視與決策</span>
+    <span><b>來源檔案：</b>Dashboard_Data.xlsx（工作表 SalesData）</span>
+    <span><b>報告期：</b>2018-01-11 至 2020-12-27</span>
+  </div>
+</header>
+
+<div class="kpis" id="kpis" aria-label="主要 KPI"></div>
+
+<section class="card">
+  <h2><span class="tag">篩選器</span>資料篩選</h2>
+  <div class="filters">
+    <label>年份（Date1）
+      <select id="f-year" aria-label="依年份篩選"><option value="all">全部年份</option></select>
+    </label>
+    <label>產品（Product）
+      <select id="f-prod" aria-label="依產品篩選"><option value="all">全部產品</option></select>
+    </label>
+    <label>目的地（DEST）
+      <select id="f-dest" aria-label="依目的地篩選"><option value="all">全部目的地</option></select>
+    </label>
+    <button id="reset-btn" type="button">重設篩選</button>
+  </div>
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <h2><span class="tag">趨勢</span>年度銷售額與訂單量（SA1 = UnitPrice × Qty）</h2>
+    <div class="chart-box" id="chart-year" role="img" aria-label="年度銷售額與訂單量柱狀圖"></div>
+    <div class="legend" id="legend-year"></div>
+  </section>
+  <section class="card">
+    <h2><span class="tag">趨勢</span>月度銷售額走勢（2018-01 至 2020-12）</h2>
+    <div class="chart-box" id="chart-month" role="img" aria-label="月度銷售額折線圖"></div>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2><span class="tag">產品</span>各產品銷售額及毛利率</h2>
+    <div class="chart-box" id="chart-prod" role="img" aria-label="產品銷售額柱狀圖"></div>
+    <div class="legend" id="legend-prod"></div>
+  </section>
+  <section class="card">
+    <h2><span class="tag">市場</span>目的地（DEST）銷售份額</h2>
+    <div class="chart-box" id="chart-dest" role="img" aria-label="目的地銷售份額環形圖"></div>
+    <div class="legend" id="legend-dest"></div>
+  </section>
+</div>
+
+<section class="card">
+  <h2><span class="tag">洞察</span>風險、異常與建議行動</h2>
+  <div class="insight-grid" id="insights"></div>
+</section>
+
+<section class="card">
+  <h2><span class="tag">明細</span>訂單明細資料表（99 筆；可搜尋、可排序）</h2>
+  <div class="table-tools">
+    <input type="search" id="search" placeholder="搜尋發票編號、客戶、產品、目的地…" aria-label="搜尋明細資料">
+  </div>
+  <div class="table-scroll">
+    <table id="dtable" aria-label="訂單明細資料表">
+      <thead></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+  </div>
+</section>
+
+<div class="note">
+  <b>資料說明：</b>
+  <ul>
+    <li>本儀表板僅使用來源檔案「Dashboard_Data.xlsx」之工作表 SalesData 的資料（99 筆訂單）。隱藏工作表「PivotTable Answers」屬練習答案，已依規則排除。</li>
+    <li>來源檔案未註明金額及單價的貨幣單位，故本儀表板金額一律以「金額單位」表述，不附加貨幣符號。</li>
+    <li>欄位：Date1 為訂單日期；Date2 等於 Date1（來源公式）；SA1 = UnitPrice × Qty（銷售額）；SA2 等於 SA1（來源公式）。毛利額 = SA1 − UnitCost × Qty；毛利率 = 毛利額 ÷ SA1。</li>
+    <li>所有指標均由來源數值計算得出；報告期為來源資料最早及最晚訂單日期。</li>
+  </ul>
+</div>
+
+</div>
+<div class="tooltip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+const RAW_DATA = [{"inv": "INV091", "date": "2018-01-11", "product": "PTS-10", "cus": "Susan James", "dest": "HK", "price": 15000.0, "cost": 14000.0, "qty": 5, "revenue": 75000.0}, {"inv": "INV018", "date": "2018-01-13", "product": "PTS-10", "cus": "Brandon Lee", "dest": "AU", "price": 18000.0, "cost": 14000.0, "qty": 7, "revenue": 126000.0}, {"inv": "INV076", "date": "2018-01-18", "product": "PTS-11", "cus": "Amy Long", "dest": "AU", "price": 5000.0, "cost": 4000.0, "qty": 7, "revenue": 35000.0}, {"inv": "INV026", "date": "2018-01-27", "product": "PTS-12", "cus": "Carolyn Gonzales", "dest": "UK", "price": 5000.0, "cost": 3000.0, "qty": 6, "revenue": 30000.0}, {"inv": "INV042", "date": "2018-02-02", "product": "PTS-11", "cus": "Diana Nelson", "dest": "JP", "price": 4000.0, "cost": 4000.0, "qty": 9, "revenue": 36000.0}, {"inv": "INV059", "date": "2018-02-28", "product": "PTS-12", "cus": "Scott Adams", "dest": "UK", "price": 3000.0, "cost": 3000.0, "qty": 10, "revenue": 30000.0}, {"inv": "INV063", "date": "2018-03-03", "product": "PTS-13", "cus": "Peter Russell", "dest": "AU", "price": 16000.0, "cost": 13000.0, "qty": 6, "revenue": 96000.0}, {"inv": "INV065", "date": "2018-04-12", "product": "PTS-13", "cus": "Amanda Cox", "dest": "US", "price": 25000.0, "cost": 13000.0, "qty": 9, "revenue": 225000.0}, {"inv": "INV015", "date": "2018-04-17", "product": "PTS-12", "cus": "Lois Brooks", "dest": "JP", "price": 5000.0, "cost": 3000.0, "qty": 8, "revenue": 40000.0}, {"inv": "INV098", "date": "2018-05-05", "product": "PTS-10", "cus": "Christine Taylor", "dest": "JP", "price": 19000.0, "cost": 14000.0, "qty": 5, "revenue": 95000.0}, {"inv": "INV079", "date": "2018-05-06", "product": "PTS-11", "cus": "William Griffin", "dest": "US", "price": 7000.0, "cost": 4000.0, "qty": 5, "revenue": 35000.0}, {"inv": "INV021", "date": "2018-05-10", "product": "PTS-10", "cus": "Stephen Stewart", "dest": "US", "price": 22000.0, "cost": 14000.0, "qty": 9, "revenue": 198000.0}, {"inv": "INV051", "date": "2018-05-21", "product": "PTS-11", "cus": "Doris Jones", "dest": "HK", "price": 5000.0, "cost": 4000.0, "qty": 10, "revenue": 50000.0}, {"inv": "INV007", "date": "2018-06-01", "product": "PTS-14", "cus": "Janice Martin", "dest": "AU", "price": 20000.0, "cost": 18000.0, "qty": 10, "revenue": 200000.0}, {"inv": "INV058", "date": "2018-06-03", "product": "PTS-15", "cus": "Wayne Howard", "dest": "AU", "price": 13000.0, "cost": 7000.0, "qty": 9, "revenue": 117000.0}, {"inv": "INV061", "date": "2018-06-10", "product": "PTS-11", "cus": "Joe Robinson", "dest": "US", "price": 6000.0, "cost": 4000.0, "qty": 8, "revenue": 48000.0}, {"inv": "INV078", "date": "2018-06-14", "product": "PTS-14", "cus": "Jonathan Green", "dest": "US", "price": 19000.0, "cost": 18000.0, "qty": 6, "revenue": 114000.0}, {"inv": "INV095", "date": "2018-06-19", "product": "PTS-10", "cus": "Christina Perez", "dest": "US", "price": 23000.0, "cost": 14000.0, "qty": 8, "revenue": 184000.0}, {"inv": "INV002", "date": "2018-06-25", "product": "PTS-14", "cus": "Kathryn Diaz", "dest": "US", "price": 28000.0, "cost": 18000.0, "qty": 7, "revenue": 196000.0}, {"inv": "INV044", "date": "2018-07-30", "product": "PTS-13", "cus": "Ernest Lewis", "dest": "AU", "price": 18000.0, "cost": 13000.0, "qty": 6, "revenue": 108000.0}, {"inv": "INV014", "date": "2018-08-16", "product": "PTS-12", "cus": "Patricia Scott", "dest": "US", "price": 6000.0, "cost": 3000.0, "qty": 5, "revenue": 30000.0}, {"inv": "INV012", "date": "2018-08-17", "product": "PTS-14", "cus": "Teresa Clark", "dest": "UK", "price": 22000.0, "cost": 18000.0, "qty": 5, "revenue": 110000.0}, {"inv": "INV086", "date": "2018-08-31", "product": "PTS-10", "cus": "Billy Price", "dest": "AU", "price": 27000.0, "cost": 14000.0, "qty": 10, "revenue": 270000.0}, {"inv": "INV082", "date": "2018-09-02", "product": "PTS-12", "cus": "Walter White", "dest": "AU", "price": 5000.0, "cost": 3000.0, "qty": 9, "revenue": 45000.0}, {"inv": "INV006", "date": "2018-09-16", "product": "PTS-13", "cus": "Joyce Smith", "dest": "AU", "price": 23000.0, "cost": 13000.0, "qty": 6, "revenue": 138000.0}, {"inv": "INV093", "date": "2018-09-19", "product": "PTS-10", "cus": "Harold Garcia", "dest": "AU", "price": 17000.0, "cost": 14000.0, "qty": 8, "revenue": 136000.0}, {"inv": "INV031", "date": "2018-10-12", "product": "PTS-15", "cus": "Matthew Watson", "dest": "AU", "price": 9000.0, "cost": 7000.0, "qty": 7, "revenue": 63000.0}, {"inv": "INV062", "date": "2018-10-13", "product": "PTS-11", "cus": "Anne Bryant", "dest": "JP", "price": 6000.0, "cost": 4000.0, "qty": 8, "revenue": 48000.0}, {"inv": "INV096", "date": "2018-10-22", "product": "PTS-11", "cus": "Carol Morris", "dest": "US", "price": 7000.0, "cost": 4000.0, "qty": 8, "revenue": 56000.0}, {"inv": "INV039", "date": "2018-10-25", "product": "PTS-10", "cus": "Jennifer Moore", "dest": "AU", "price": 21000.0, "cost": 14000.0, "qty": 5, "revenue": 105000.0}, {"inv": "INV041", "date": "2018-10-28", "product": "PTS-15", "cus": "Margaret Wood", "dest": "HK", "price": 8000.0, "cost": 7000.0, "qty": 6, "revenue": 48000.0}, {"inv": "INV099", "date": "2018-10-28", "product": "PTS-13", "cus": "Jerry Coleman", "dest": "AU", "price": 22000.0, "cost": 13000.0, "qty": 9, "revenue": 198000.0}, {"inv": "INV049", "date": "2018-11-09", "product": "PTS-14", "cus": "Barbara Alexande", "dest": "AU", "price": 33000.0, "cost": 18000.0, "qty": 10, "revenue": 330000.0}, {"inv": "INV077", "date": "2018-11-19", "product": "PTS-11", "cus": "Sandra Cook", "dest": "UK", "price": 6000.0, "cost": 4000.0, "qty": 7, "revenue": 42000.0}, {"inv": "INV068", "date": "2018-11-26", "product": "PTS-14", "cus": "Joshua Bell", "dest": "AU", "price": 19000.0, "cost": 18000.0, "qty": 6, "revenue": 114000.0}, {"inv": "INV033", "date": "2018-11-30", "product": "PTS-13", "cus": "Timothy Powell", "dest": "UK", "price": 16000.0, "cost": 13000.0, "qty": 6, "revenue": 96000.0}, {"inv": "INV043", "date": "2018-12-16", "product": "PTS-11", "cus": "Roy Butler", "dest": "UK", "price": 5000.0, "cost": 4000.0, "qty": 6, "revenue": 30000.0}, {"inv": "INV072", "date": "2018-12-22", "product": "PTS-11", "cus": "Rose Rivera", "dest": "AU", "price": 6000.0, "cost": 4000.0, "qty": 6, "revenue": 36000.0}, {"inv": "INV060", "date": "2018-12-29", "product": "PTS-15", "cus": "Bruce Hill", "dest": "US", "price": 11000.0, "cost": 7000.0, "qty": 7, "revenue": 77000.0}, {"inv": "INV027", "date": "2019-01-20", "product": "PTS-12", "cus": "Melissa Rogers", "dest": "US", "price": 5000.0, "cost": 3000.0, "qty": 5, "revenue": 25000.0}, {"inv": "INV066", "date": "2019-01-21", "product": "PTS-10", "cus": "Brenda Patterson", "dest": "AU", "price": 15000.0, "cost": 14000.0, "qty": 5, "revenue": 75000.0}, {"inv": "INV013", "date": "2019-01-27", "product": "PTS-11", "cus": "Jessica Johnson", "dest": "US", "price": 4000.0, "cost": 4000.0, "qty": 5, "revenue": 20000.0}, {"inv": "INV045", "date": "2019-02-12", "product": "PTS-15", "cus": "Michael Sanchez", "dest": "AU", "price": 11000.0, "cost": 7000.0, "qty": 5, "revenue": 55000.0}, {"inv": "INV083", "date": "2019-02-12", "product": "PTS-11", "cus": "Angela Parker", "dest": "AU", "price": 5000.0, "cost": 4000.0, "qty": 6, "revenue": 30000.0}, {"inv": "INV085", "date": "2019-03-10", "product": "PTS-12", "cus": "Todd Thomas", "dest": "AU", "price": 6000.0, "cost": 3000.0, "qty": 5, "revenue": 30000.0}, {"inv": "INV053", "date": "2019-03-15", "product": "PTS-15", "cus": "Brian Flores", "dest": "JP", "price": 10000.0, "cost": 7000.0, "qty": 6, "revenue": 60000.0}, {"inv": "INV088", "date": "2019-03-17", "product": "PTS-12", "cus": "Adam Young", "dest": "AU", "price": 4000.0, "cost": 3000.0, "qty": 9, "revenue": 36000.0}, {"inv": "INV074", "date": "2019-03-25", "product": "PTS-15", "cus": "Steve Perry", "dest": "AU", "price": 12000.0, "cost": 7000.0, "qty": 9, "revenue": 108000.0}, {"inv": "INV087", "date": "2019-04-01", "product": "PTS-14", "cus": "Eugene Ross", "dest": "AU", "price": 28000.0, "cost": 18000.0, "qty": 9, "revenue": 252000.0}, {"inv": "INV017", "date": "2019-05-10", "product": "PTS-12", "cus": "Philip Wright", "dest": "UK", "price": 4000.0, "cost": 3000.0, "qty": 7, "revenue": 28000.0}, {"inv": "INV064", "date": "2019-05-13", "product": "PTS-10", "cus": "Fred Jackson", "dest": "AU", "price": 20000.0, "cost": 14000.0, "qty": 10, "revenue": 200000.0}, {"inv": "INV067", "date": "2019-05-30", "product": "PTS-15", "cus": "Shirley Martine", "dest": "AU", "price": 8000.0, "cost": 7000.0, "qty": 6, "revenue": 48000.0}, {"inv": "INV090", "date": "2019-06-01", "product": "PTS-12", "cus": "Jeffrey Roberts", "dest": "UK", "price": 5000.0, "cost": 3000.0, "qty": 9, "revenue": 45000.0}, {"inv": "INV046", "date": "2019-06-23", "product": "PTS-12", "cus": "Catherine Collin", "dest": "UK", "price": 6000.0, "cost": 6000.0, "qty": 6, "revenue": 36000.0}, {"inv": "INV025", "date": "2019-06-25", "product": "PTS-15", "cus": "Denise King", "dest": "US", "price": 11000.0, "cost": 7000.0, "qty": 6, "revenue": 66000.0}, {"inv": "INV034", "date": "2019-06-26", "product": "PTS-15", "cus": "Roger Wilson", "dest": "AU", "price": 9000.0, "cost": 7000.0, "qty": 10, "revenue": 90000.0}, {"inv": "INV001", "date": "2019-06-27", "product": "PTS-11", "cus": "Chris Ward", "dest": "AU", "price": 17000.0, "cost": 14000.0, "qty": 8, "revenue": 136000.0}, {"inv": "INV047", "date": "2019-07-05", "product": "PTS-14", "cus": "Phillip Reed", "dest": "AU", "price": 35000.0, "cost": 18000.0, "qty": 5, "revenue": 175000.0}, {"inv": "INV035", "date": "2019-07-09", "product": "PTS-10", "cus": "Jeremy Morgan", "dest": "US", "price": 16000.0, "cost": 14000.0, "qty": 5, "revenue": 80000.0}, {"inv": "INV028", "date": "2019-07-26", "product": "PTS-12", "cus": "Harry Carter", "dest": "AU", "price": 5000.0, "cost": 3000.0, "qty": 7, "revenue": 35000.0}, {"inv": "INV029", "date": "2019-08-16", "product": "PTS-15", "cus": "Ronald Phillips", "dest": "JP", "price": 9000.0, "cost": 7000.0, "qty": 6, "revenue": 54000.0}, {"inv": "INV080", "date": "2019-09-14", "product": "PTS-14", "cus": "Dorothy Bennett", "dest": "AU", "price": 29000.0, "cost": 18000.0, "qty": 7, "revenue": 203000.0}, {"inv": "INV010", "date": "2019-09-27", "product": "PTS-13", "cus": "Stephanie Ed", "dest": "AU", "price": 22000.0, "cost": 13000.0, "qty": 8, "revenue": 176000.0}, {"inv": "INV073", "date": "2019-09-28", "product": "PTS-14", "cus": "Bobby Allen", "dest": "US", "price": 22000.0, "cost": 18000.0, "qty": 5, "revenue": 110000.0}, {"inv": "INV089", "date": "2019-10-11", "product": "PTS-12", "cus": "Marie Henderson", "dest": "AU", "price": 3000.0, "cost": 3000.0, "qty": 5, "revenue": 15000.0}, {"inv": "INV040", "date": "2019-10-17", "product": "PTS-11", "cus": "Eric Ramirez", "dest": "US", "price": 8000.0, "cost": 4000.0, "qty": 6, "revenue": 48000.0}, {"inv": "INV019", "date": "2019-10-24", "product": "PTS-15", "cus": "Jose Miller", "dest": "AU", "price": 11000.0, "cost": 7000.0, "qty": 9, "revenue": 99000.0}, {"inv": "INV038", "date": "2019-10-27", "product": "PTS-14", "cus": "Lawrence Wash", "dest": "AU", "price": 21000.0, "cost": 18000.0, "qty": 7, "revenue": 147000.0}, {"inv": "INV050", "date": "2019-11-03", "product": "PTS-11", "cus": "Annie Bailey", "dest": "AU", "price": 8000.0, "cost": 4000.0, "qty": 6, "revenue": 48000.0}, {"inv": "INV070", "date": "2019-11-06", "product": "PTS-10", "cus": "Elizabeth Gonz", "dest": "AU", "price": 23000.0, "cost": 14000.0, "qty": 5, "revenue": 115000.0}, {"inv": "INV097", "date": "2019-11-18", "product": "PTS-13", "cus": "Jane Brown", "dest": "US", "price": 24000.0, "cost": 13000.0, "qty": 9, "revenue": 216000.0}, {"inv": "INV075", "date": "2019-12-01", "product": "PTS-14", "cus": "Terry Rodrig", "dest": "AU", "price": 36000.0, "cost": 18000.0, "qty": 6, "revenue": 216000.0}, {"inv": "INV020", "date": "2019-12-04", "product": "PTS-13", "cus": "Gregory Simmons", "dest": "AU", "price": 23000.0, "cost": 13000.0, "qty": 6, "revenue": 138000.0}, {"inv": "INV023", "date": "2019-12-16", "product": "PTS-13", "cus": "Karen Peterson", "dest": "UK", "price": 21000.0, "cost": 13000.0, "qty": 5, "revenue": 105000.0}, {"inv": "INV054", "date": "2019-12-17", "product": "PTS-10", "cus": "Linda Foster", "dest": "AU", "price": 20000.0, "cost": 14000.0, "qty": 5, "revenue": 100000.0}, {"inv": "INV094", "date": "2020-01-04", "product": "PTS-13", "cus": "Marilyn Mitchell", "dest": "AU", "price": 22000.0, "cost": 13000.0, "qty": 9, "revenue": 198000.0}, {"inv": "INV036", "date": "2020-01-26", "product": "PTS-13", "cus": "Benjamin Gray", "dest": "US", "price": 23000.0, "cost": 13000.0, "qty": 10, "revenue": 230000.0}, {"inv": "INV011", "date": "2020-02-04", "product": "PTS-12", "cus": "Evelyn Jenkins", "dest": "AU", "price": 4000.0, "cost": 3000.0, "qty": 8, "revenue": 32000.0}, {"inv": "INV055", "date": "2020-03-14", "product": "PTS-11", "cus": "Clarence Willia", "dest": "US", "price": 7000.0, "cost": 4000.0, "qty": 10, "revenue": 70000.0}, {"inv": "INV048", "date": "2020-03-23", "product": "PTS-13", "cus": "Betty Sanders", "dest": "US", "price": 13000.0, "cost": 13000.0, "qty": 9, "revenue": 117000.0}, {"inv": "INV030", "date": "2020-04-17", "product": "PTS-12", "cus": "Gloria Murphy", "dest": "US", "price": 5000.0, "cost": 3000.0, "qty": 7, "revenue": 35000.0}, {"inv": "INV004", "date": "2020-04-30", "product": "PTS-14", "cus": "Russell Lopez", "dest": "US", "price": 32000.0, "cost": 18000.0, "qty": 9, "revenue": 288000.0}, {"inv": "INV069", "date": "2020-05-12", "product": "PTS-13", "cus": "Raymond Baker", "dest": "US", "price": 15000.0, "cost": 13000.0, "qty": 8, "revenue": 120000.0}, {"inv": "INV037", "date": "2020-05-30", "product": "PTS-12", "cus": "Louise Walker", "dest": "US", "price": 3000.0, "cost": 3000.0, "qty": 7, "revenue": 21000.0}, {"inv": "INV022", "date": "2020-06-03", "product": "PTS-13", "cus": "Thomas Davis", "dest": "JP", "price": 25000.0, "cost": 13000.0, "qty": 6, "revenue": 150000.0}, {"inv": "INV084", "date": "2020-06-22", "product": "PTS-12", "cus": "Gerald Barnes", "dest": "HK", "price": 5000.0, "cost": 3000.0, "qty": 9, "revenue": 45000.0}, {"inv": "INV024", "date": "2020-07-16", "product": "PTS-14", "cus": "Juan Torres", "dest": "US", "price": 19000.0, "cost": 18000.0, "qty": 5, "revenue": 95000.0}, {"inv": "INV092", "date": "2020-07-20", "product": "PTS-13", "cus": "Justin Richardson", "dest": "HK", "price": 23000.0, "cost": 13000.0, "qty": 9, "revenue": 207000.0}, {"inv": "INV003", "date": "2020-07-28", "product": "PTS-14", "cus": "Anna Cooper", "dest": "UK", "price": 25000.0, "cost": 18000.0, "qty": 12, "revenue": 300000.0}, {"inv": "INV005", "date": "2020-08-05", "product": "PTS-15", "cus": "Mary Thompson", "dest": "HK", "price": 9000.0, "cost": 7000.0, "qty": 5, "revenue": 45000.0}, {"inv": "INV057", "date": "2020-08-24", "product": "PTS-11", "cus": "Deborah Hall", "dest": "US", "price": 5000.0, "cost": 4000.0, "qty": 5, "revenue": 25000.0}, {"inv": "INV081", "date": "2020-08-30", "product": "PTS-13", "cus": "Kevin Turner", "dest": "JP", "price": 18000.0, "cost": 13000.0, "qty": 5, "revenue": 90000.0}, {"inv": "INV016", "date": "2020-09-03", "product": "PTS-11", "cus": "Keith Campbell", "dest": "US", "price": 7000.0, "cost": 4000.0, "qty": 5, "revenue": 35000.0}, {"inv": "INV032", "date": "2020-10-17", "product": "PTS-12", "cus": "Ashley Hernandez", "dest": "AU", "price": 6000.0, "cost": 3000.0, "qty": 8, "revenue": 48000.0}, {"inv": "INV056", "date": "2020-10-30", "product": "PTS-12", "cus": "Jason Kelly", "dest": "US", "price": 3000.0, "cost": 3000.0, "qty": 5, "revenue": 15000.0}, {"inv": "INV009", "date": "2020-11-05", "product": "PTS-10", "cus": "Irene Hughes", "dest": "US", "price": 23000.0, "cost": 14000.0, "qty": 7, "revenue": 161000.0}, {"inv": "INV008", "date": "2020-11-25", "product": "PTS-11", "cus": "Paul Harris", "dest": "HK", "price": 7000.0, "cost": 4000.0, "qty": 8, "revenue": 56000.0}, {"inv": "INV071", "date": "2020-11-25", "product": "PTS-12", "cus": "John Evans", "dest": "AU", "price": 5000.0, "cost": 3000.0, "qty": 9, "revenue": 45000.0}, {"inv": "INV052", "date": "2020-12-27", "product": "PTS-11", "cus": "Donald Anderson", "dest": "HK", "price": 4000.0, "cost": 4000.0, "qty": 8, "revenue": 32000.0}];
+const fmt = n => Number(n).toLocaleString('zh-Hant');
+const fmtPct = n => (n*1).toFixed(1) + '%';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const state = {year:'all', prod:'all', dest:'all', search:'', sortKey:null, sortDir:1};
+let filtered = RAW_DATA.slice();
+
+function applyFilters(){
+  filtered = RAW_DATA.filter(r =>
+    (state.year==='all' || r.date.slice(0,4)===state.year) &&
+    (state.prod==='all' || r.product===state.prod) &&
+    (state.dest==='all' || r.dest===state.dest)
+  );
+  const q = state.search.trim().toLowerCase();
+  if(q){ filtered = filtered.filter(r => [r.inv,r.cus,r.product,r.dest,r.date].join(' ').toLowerCase().includes(q)); }
+  renderAll();
+}
+
+function agg(){
+  const rev = filtered.reduce((s,r)=>s+r.revenue,0);
+  const qty = filtered.reduce((s,r)=>s+r.qty,0);
+  const cost = filtered.reduce((s,r)=>s+r.cost*r.qty,0);
+  const n = filtered.length;
+  const margin = rev ? (rev-cost)/rev : 0;
+  const products = new Set(filtered.map(r=>r.product));
+  const dests = new Set(filtered.map(r=>r.dest));
+  const years = new Set(filtered.map(r=>r.date.slice(0,4)));
+  return {rev,qty,cost,n,margin,products,dests,years};
+}
+
+function kpiCard(label, value, sub){
+  return `<div class="kpi"><div class="k-label">${esc(label)}</div><div class="k-value">${value}</div><div class="k-sub">${sub||''}</div></div>`;
+}
+function renderKPIs(){
+  const a = agg();
+  const el = document.getElementById('kpis');
+  el.innerHTML =
+    kpiCard('總銷售額（SA1 合計）', fmt(a.rev), '金額單位：來源未註明') +
+    kpiCard('總銷量（Qty 合計）', fmt(a.qty), '件') +
+    kpiCard('訂單數', fmt(a.n), '筆') +
+    kpiCard('整體毛利率', fmtPct(a.margin*100), '（SA1 − UnitCost×Qty）÷ SA1') +
+    kpiCard('產品種類', fmt(a.products.size), '款（' + [...a.products].join('、') + '）') +
+    kpiCard('目的地市場', fmt(a.dests.size), '個（' + [...a.dests].join('、') + '）');
+}
+
+const tip = document.getElementById('tip');
+function showTip(html, x, y){
+  tip.innerHTML = html; tip.style.opacity = '1';
+  tip.style.left = (x + 14) + 'px'; tip.style.top = (y + 14) + 'px';
+}
+function hideTip(){ tip.style.opacity = '0'; }
+function bindTip(el, html){
+  el.addEventListener('mousemove', e => showTip(html, e.clientX, e.clientY));
+  el.addEventListener('mouseleave', hideTip);
+}
+
+function barChart(elId, items){
+  const box = document.getElementById(elId);
+  const W = 640, H = 300, padL = 74, padB = 34, padT = 14;
+  const max = Math.max(1, ...items.map(i => i.v));
+  const barW = Math.min(64, (W-padL-16)/items.length * 0.62);
+  const slot = (W-padL-16)/items.length;
+  let bars = '', labels = '';
+  items.forEach((it, i) => {
+    const h = (it.v/max) * (H-padT-padB);
+    const x = padL + i*slot + (slot-barW)/2;
+    const y = H - padB - h;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${it.color||'var(--bar)'}" role="presentation">
+      <title>${esc(it.name)}：${fmt(it.v)}${it.unit?' '+it.unit:''}</title></rect>`;
+    labels += `<text x="${(x+barW/2).toFixed(1)}" y="${H-padB+18}" text-anchor="middle" font-size="12" fill="var(--dim)">${esc(it.name)}</text>`;
+  });
+  const ticks = 4;
+  let grid = '';
+  for(let i=0;i<=ticks;i++){
+    const y = padT + (H-padT-padB)*i/ticks;
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-10}" y2="${y.toFixed(1)}" stroke="var(--line)"/>
+      <text x="${padL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--dim)">${fmt(Math.round(max*(ticks-i)/ticks))}</text>`;
+  }
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${grid}${bars}${labels}</svg>`;
+  box.querySelectorAll('rect').forEach((r,i) => {
+    if(i<items.length) bindTip(r, `<b>${esc(items[i].name)}</b><br>銷售額：${fmt(items[i].v)}${items[i].unit?' '+items[i].unit:''}<br>${items[i].extra||''}`);
+  });
+}
+
+function lineChart(elId, labels, values){
+  const box = document.getElementById(elId);
+  const W = 640, H = 280, padL = 74, padB = 30, padT = 14;
+  const max = Math.max(1, ...values);
+  const px = i => padL + (W-padL-20) * i/(labels.length-1);
+  const py = v => padT + (H-padT-padB) * (1 - v/max);
+  const pts = values.map((v,i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+  let grid = '', xl = '', dots = '';
+  for(let i=0;i<=4;i++){
+    const y = padT + (H-padT-padB)*i/4;
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-10}" y2="${y.toFixed(1)}" stroke="var(--line)"/>
+      <text x="${padL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--dim)">${fmt(Math.round(max*(4-i)/4))}</text>`;
+  }
+  labels.forEach((l,i) => {
+    if(i % 3 === 0){
+      xl += `<text x="${px(i).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="var(--dim)">${esc(l)}</text>`;
+    }
+  });
+  values.forEach((v,i) => {
+    dots += `<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="3" fill="var(--brand)" role="presentation"><title>${esc(labels[i])}：${fmt(v)}</title></circle>`;
+  });
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">
+    ${grid}<polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linejoin="round"/>${dots}${xl}</svg>`;
+  box.querySelectorAll('circle').forEach((c,i) => bindTip(c, `<b>${esc(labels[i])}</b><br>銷售額：${fmt(values[i])}`));
+}
+
+function donutChart(elId, segs){
+  const box = document.getElementById(elId);
+  const W = 300, H = 300, cx = 150, cy = 150, r = 104, r2 = 62;
+  const total = segs.reduce((s,x)=>s+x.v,0);
+  let angle = -Math.PI/2, paths = '';
+  segs.forEach(s => {
+    const frac = s.v/total, a2 = angle + frac*Math.PI*2;
+    const large = (a2-angle) > Math.PI ? 1 : 0;
+    const x1 = cx + r*Math.cos(angle), y1 = cy + r*Math.sin(angle);
+    const x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+    paths += `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z"
+      fill="${s.color}" stroke="#fff" stroke-width="1.5"><title>${esc(s.name)}：${fmtPct(frac*100)}</title></path>`;
+    angle = a2;
+  });
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${paths}
+    <circle cx="${cx}" cy="${cy}" r="${r2}" fill="#fff"/>
+    <text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="13" fill="var(--dim)">總計</text>
+    <text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="20" font-weight="700">${fmt(total)}</text></svg>`;
+  box.querySelectorAll('path').forEach((p,i) => bindTip(p, `<b>${esc(segs[i].name)}</b><br>銷售額：${fmt(segs[i].v)}（${fmtPct(segs[i].v/total*100)}）`));
+}
+
+const COLORS = ['#3b82f6','#8b5cf6','#0ea5e9','#f59e0b','#10b981','#ef4444','#64748b','#ec4899'];
+const DEST_NAMES = {AU:'澳洲（AU）',US:'美國（US）',UK:'英國（UK）',JP:'日本（JP）',HK:'香港（HK）'};
+
+function renderCharts(){
+  const byYear = {};
+  RAW_DATA.filter(r => matchesFilters(r)).forEach(r => {});
+  const f = filtered;
+  const years = ['2018','2019','2020'].filter(y => f.some(r => r.date.startsWith(y)));
+  const yItems = years.map((y,i) => {
+    const rs = f.filter(r => r.date.startsWith(y));
+    return {name: y+' 年', v: rs.reduce((s,r)=>s+r.revenue,0), color: COLORS[i], unit:'', extra:'訂單 '+rs.length+' 筆'};
+  });
+  barChart('chart-year', yItems);
+  document.getElementById('legend-year').innerHTML = yItems.map(i =>
+    `<span><span class="sw" style="background:${i.color}"></span>${esc(i.name)}</span>`).join('');
+
+  const monthly = {};
+  f.forEach(r => { monthly[r.date.slice(0,7)] = (monthly[r.date.slice(0,7)]||0) + r.revenue; });
+  const mkeys = Object.keys(monthly).sort();
+  lineChart('chart-month', mkeys, mkeys.map(k => monthly[k]));
+
+  const byProd = {};
+  f.forEach(r => {
+    byProd[r.product] = byProd[r.product] || {rev:0,cost:0,qty:0};
+    byProd[r.product].rev += r.revenue;
+    byProd[r.product].cost += r.cost*r.qty;
+  });
+  const pkeys = Object.keys(byProd).sort();
+  barChart('chart-prod', pkeys.map((p,i) => {
+    const d = byProd[p];
+    const m = d.rev ? (d.rev-d.cost)/d.rev : 0;
+    return {name:p, v:d.rev, color:COLORS[i%COLORS.length], extra:'毛利率 '+fmtPct(m*100)};
+  }));
+  document.getElementById('legend-prod').innerHTML = pkeys.map((p,i) => {
+    const d = byProd[p];
+    const m = d.rev ? (d.rev-d.cost)/d.rev : 0;
+    return `<span><span class="sw" style="background:${COLORS[i%COLORS.length]}"></span>${esc(p)}（毛利率 ${fmtPct(m*100)}）</span>`;
+  }).join('');
+
+  const byDest = {};
+  f.forEach(r => { byDest[r.dest] = (byDest[r.dest]||0) + r.revenue; });
+  const dkeys = Object.keys(byDest).sort((a,b) => byDest[b]-byDest[a]);
+  donutChart('chart-dest', dkeys.map((d,i) => ({name:DEST_NAMES[d]||d, v:byDest[d], color:COLORS[i%COLORS.length]})));
+  document.getElementById('legend-dest').innerHTML = dkeys.map((d,i) =>
+    `<span><span class="sw" style="background:${COLORS[i%COLORS.length]}"></span>${esc(DEST_NAMES[d]||d)}</span>`).join('');
+}
+
+function matchesFilters(r){
+  return (state.year==='all'||r.date.slice(0,4)===state.year) &&
+    (state.prod==='all'||r.product===state.prod) &&
+    (state.dest==='all'||r.dest===state.dest);
+}
+
+function renderInsights(){
+  const f = filtered;
+  const out = [];
+  const revTotal = f.reduce((s,r)=>s+r.revenue,0);
+  const byDest = {};
+  f.forEach(r => byDest[r.dest] = (byDest[r.dest]||0)+r.revenue);
+  const topDest = Object.keys(byDest).sort((a,b)=>byDest[b]-byDest[a])[0];
+  const zero = f.filter(r => r.price===r.cost);
+  const zeroRev = zero.reduce((s,r)=>s+r.revenue,0);
+  const byProd = {};
+  f.forEach(r => { byProd[r.product] = byProd[r.product]||{rev:0,cost:0,qty:0};
+    byProd[r.product].rev+=r.revenue; byProd[r.product].cost+=r.cost*r.qty; });
+  const best = Object.keys(byProd).sort((a,b)=>byProd[b].rev-byProd[a].rev)[0];
+  const bestM = Object.keys(byProd).sort((a,b)=>{const ma=byProd[a].rev?(byProd[a].rev-byProd[a].cost)/byProd[a].rev:0;
+    const mb=byProd[b].rev?(byProd[b].rev-byProd[b].cost)/byProd[b].rev:0; return mb-ma;})[0];
+
+  const years = {};
+  f.forEach(r => { const y = r.date.slice(0,4); years[y]=(years[y]||0)+r.revenue; });
+  const ys = Object.keys(years).sort();
+  if(ys.length>=2){
+    const last = years[ys[ys.length-1]], first = years[ys[0]];
+    out.push({cls:'warn', h:'銷售額逐年下滑', p:`報告期內年度銷售額由 ${ys[0]} 年 ${fmt(first)} 降至 ${ys[ys.length-1]} 年 ${fmt(last)}（降幅 ${fmtPct((first-last)/first*100)}）。建議行動：檢視主要市場需求變化，並檢討產品組合與定價策略。`});
+  }
+  if(topDest){
+    const share = byDest[topDest]/revTotal*100;
+    if(share>40) out.push({cls:'warn', h:'市場集中風險', p:`最大目的地市場 ${esc(DEST_NAMES[topDest]||topDest)} 佔銷售額 ${fmtPct(share)}，集中度高。建議行動：評估開拓其他市場以分散風險。`});
+  }
+  if(zero.length>0){
+    out.push({cls:'bad', h:`${zero.length} 筆零毛利訂單`, p:`該等訂單 UnitPrice 等於 UnitCost（合計銷售額 ${fmt(zeroRev)}）。建議行動：檢視訂價審批流程，避免以成本價出單。`});
+  }
+  if(best){
+    const d = byProd[best];
+    out.push({cls:'ok', h:`銷售主力：${esc(best)}`, p:`佔銷售額 ${fmtPct(d.rev/revTotal*100)}（${fmt(d.rev)}）。建議行動：維持供應穩定性，並分析其成功因素套用至其他產品。`});
+  }
+  if(bestM && byProd[bestM].rev){
+    const d = byProd[bestM];
+    const m = (d.rev-d.cost)/d.rev;
+    out.push({cls:'ok', h:`毛利率最高：${esc(bestM)}`, p:`毛利率 ${fmtPct(m*100)}。建議行動：於資源允許時優先推廣高毛利產品。`});
+  }
+  const oddPts11 = f.filter(r => r.product==='PTS-11' && r.price>8000);
+  if(oddPts11.length){
+    out.push({cls:'warn', h:'異常：PTS-11 出現高價訂單', p:`PTS-11 一般單價為 4,000–8,000，但訂單 ${esc(oddPts11[0].inv)} 的單價達 ${fmt(oddPts11[0].price)}。建議行動：與業務核實該筆定價是否正確。`});
+  }
+  const cost6000 = f.filter(r => r.product==='PTS-12' && r.cost===6000);
+  if(cost6000.length){
+    out.push({cls:'warn', h:'異常：PTS-12 成本不一致', p:`PTS-12 一般單位成本為 3,000，但訂單 ${esc(cost6000[0].inv)} 的單位成本為 6,000。建議行動：核實成本入帳或供貨商報價變動。`});
+  }
+  const neg = f.filter(r => r.price < r.cost);
+  if(!neg.length){
+    out.push({cls:'ok', h:'無負毛利訂單', p:'全部訂單 UnitPrice ≥ UnitCost，未有虧損訂單。'});
+  }
+  if(!f.length){
+    out.push({cls:'warn', h:'無符合篩選條件的資料', p:'請調整篩選條件或按「重設篩選」。'});
+  }
+  document.getElementById('insights').innerHTML = out.map(o =>
+    `<div class="insight ${o.cls}"><h3>${esc(o.h)}</h3><p>${esc(o.p)}</p></div>`).join('');
+}
+
+const COLS = [
+  {k:'inv', label:'INV #（發票編號）', type:'s'},
+  {k:'date', label:'Date1（訂單日期）', type:'s'},
+  {k:'product', label:'Product（產品）', type:'s'},
+  {k:'cus', label:'CUS（客戶）', type:'s'},
+  {k:'dest', label:'DEST（目的地）', type:'s'},
+  {k:'price', label:'UnitPrice（單價）', type:'n'},
+  {k:'cost', label:'UnitCost（單位成本）', type:'n'},
+  {k:'qty', label:'Qty（數量）', type:'n'},
+  {k:'revenue', label:'SA1 銷售額', type:'n'},
+  {k:'margin', label:'毛利率', type:'pct'},
+];
+function renderTable(){
+  const thead = document.querySelector('#dtable thead');
+  thead.innerHTML = '<tr>' + COLS.map((c,i) =>
+    `<th scope="col" data-i="${i}" aria-sort="${state.sortKey===c.k ? (state.sortDir>0?'ascending':'descending') : 'none'}">${esc(c.label)} <span class="arrow">${state.sortKey===c.k ? (state.sortDir>0?'▲':'▼') : '↕'}</span></th>`).join('') + '</tr>';
+  let f = filtered.slice();
+  if(state.sortKey){
+    const c = COLS.find(x => x.k===state.sortKey);
+    f.sort((a,b) => {
+      const va = c.type==='n' ? a[c.k] : (c.type==='pct' ? a.margin : a[c.k]);
+      const vb = c.type==='n' ? b[c.k] : (c.type==='pct' ? b.margin : b[c.k]);
+      if(typeof va==='number') return (va-vb)*state.sortDir;
+      return String(va).localeCompare(String(vb), 'zh-Hant')*state.sortDir;
+    });
+  } else {
+    f.sort((a,b) => a.date.localeCompare(b.date));
+  }
+  const tbody = document.querySelector('#dtable tbody');
+  tbody.innerHTML = f.map(r => `<tr>
+    <td>${esc(r.inv)}</td><td>${esc(r.date)}</td><td>${esc(r.product)}</td><td>${esc(r.cus)}</td>
+    <td>${esc(r.dest)}</td><td>${fmt(r.price)}</td><td>${fmt(r.cost)}</td><td>${fmt(r.qty)}</td>
+    <td>${fmt(r.revenue)}</td><td>${fmtPct(r.margin*100)}</td></tr>`).join('');
+  const tfoot = document.querySelector('#dtable tfoot');
+  const rev = f.reduce((s,r)=>s+r.revenue,0);
+  const qty = f.reduce((s,r)=>s+r.qty,0);
+  tfoot.innerHTML = `<tr><td colspan="3">合計（${f.length} 筆）</td><td></td><td></td><td></td><td></td>
+    <td>${fmt(qty)}</td><td>${fmt(rev)}</td><td></td></tr>`;
+  thead.querySelectorAll('th').forEach(th => {
+    th.addEventListener('click', () => {
+      const i = +th.dataset.i, k = COLS[i].k;
+      if(state.sortKey===k){ state.sortDir = -state.sortDir; }
+      else { state.sortKey = k; state.sortDir = 1; }
+      renderTable();
+    });
+  });
+}
+
+function renderAll(){ renderKPIs(); renderCharts(); renderInsights(); renderTable(); }
+
+function init(){
+  RAW_DATA.forEach(r => { r.margin = r.price ? (r.price-r.cost)/r.price : 0; });
+  const ys = [...new Set(RAW_DATA.map(r => r.date.slice(0,4)))].sort();
+  const ps = [...new Set(RAW_DATA.map(r => r.product))].sort();
+  const ds = [...new Set(RAW_DATA.map(r => r.dest))].sort();
+  document.getElementById('f-year').innerHTML = '<option value="all">全部年份</option>' + ys.map(y => `<option value="${y}">${y} 年</option>`).join('');
+  document.getElementById('f-prod').innerHTML = '<option value="all">全部產品</option>' + ps.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  document.getElementById('f-dest').innerHTML = '<option value="all">全部目的地</option>' + ds.map(d => `<option value="${esc(d)}">${esc(DEST_NAMES[d]||d)}</option>`).join('');
+  document.getElementById('f-year').addEventListener('change', e => { state.year = e.target.value; applyFilters(); });
+  document.getElementById('f-prod').addEventListener('change', e => { state.prod = e.target.value; applyFilters(); });
+  document.getElementById('f-dest').addEventListener('change', e => { state.dest = e.target.value; applyFilters(); });
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    state.year='all'; state.prod='all'; state.dest='all'; state.search='';
+    document.getElementById('f-year').value='all';
+    document.getElementById('f-prod').value='all';
+    document.getElementById('f-dest').value='all';
+    document.getElementById('search').value='';
+    applyFilters();
+  });
+  document.getElementById('search').addEventListener('input', e => { state.search = e.target.value; applyFilters(); });
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
