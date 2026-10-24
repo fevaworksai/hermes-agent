@@ -1,0 +1,29 @@
+[
+  {
+    "name": "待辦清單 Todo List",
+    "icon": "✅",
+    "desc": "簡潔的待辦事項工具：新增、標記完成、刪除，支援本機自動儲存及深色模式。",
+    "stack": ["HTML", "CSS", "JavaScript", "localStorage"],
+    "category": "生產力",
+    "status": "已上線",
+    "url": "todo.html"
+  },
+  {
+    "name": "銷售數據儀表板",
+    "icon": "📊",
+    "desc": "由 Excel 銷售資料生成的可互動儀表板：KPI、趨勢圖表、市場份額、篩選器與可搜尋明細表。",
+    "stack": ["HTML", "CSS", "JavaScript", "SVG 圖表"],
+    "category": "數據分析",
+    "status": "已上線",
+    "url": "dashboard/"
+  },
+  {
+    "name": "小朋友學習樂園",
+    "icon": "🦁",
+    "desc": "5–8 歲兒童學習遊戲：英文生字配對與數學加減挑戰，含計分、動畫回饋與卡通介面。",
+    "stack": ["HTML", "CSS", "JavaScript", "Web Audio"],
+    "category": "教育遊戲",
+    "status": "已上線",
+    "url": "kids-learning/"
+  }
+]

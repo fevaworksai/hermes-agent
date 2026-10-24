@@ -26,6 +26,8 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/
+          cp todo.html _site/
+          cp projects.json _site/
           mkdir -p _site/dashboard
           cp dashboard/index.html _site/dashboard/
           mkdir -p _site/kids-learning
