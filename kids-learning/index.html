@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小朋友學習樂園</title>
+<style>
+:root{
+  --sky:#7cc4ff; --sun:#ffd84d; --grass:#8fe388; --pink:#ff9ecb; --purple:#b79bff;
+  --ink:#3a3f58; --card:#ffffff; --ok:#3fbf6f; --bad:#ff6b6b;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:"Comic Sans MS","Chalkboard SE","PingFang HK","Microsoft JhengHei",sans-serif;
+  background:linear-gradient(180deg,#a8dcff 0%,#cdeaff 45%,#d9f3d0 100%);
+  min-height:100vh;color:var(--ink);display:flex;align-items:center;justify-content:center;
+  padding:20px;user-select:none;
+}
+.cloud{position:fixed;background:#fff;border-radius:50px;opacity:.9;z-index:0}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud.c1{width:110px;height:38px;top:8%;left:6%}
+.cloud.c1::before{width:46px;height:46px;top:-22px;left:16px}
+.cloud.c1::after{width:34px;height:34px;top:-14px;left:52px}
+.cloud.c2{width:90px;height:32px;top:16%;right:8%}
+.cloud.c2::before{width:38px;height:38px;top:-18px;left:12px}
+.cloud.c2::after{width:28px;height:28px;top:-12px;left:44px}
+.page{position:relative;z-index:1;width:100%;max-width:640px;display:none}
+.page.active{display:block}
+.card{
+  background:var(--card);border-radius:28px;padding:28px 24px;text-align:center;
+  box-shadow:0 12px 30px rgba(60,90,160,.18);border:4px solid #fff;outline:4px solid rgba(183,155,255,.25);
+}
+.mascot{font-size:72px;line-height:1;animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+h1{font-size:34px;margin:10px 0 4px;color:#5b63c9}
+.sub{font-size:16px;color:#8a92b8;margin-bottom:22px}
+.bigbtn{
+  display:flex;align-items:center;gap:14px;width:100%;padding:18px 22px;margin:12px 0;
+  font-size:24px;font-weight:700;border:none;border-radius:22px;cursor:pointer;
+  font-family:inherit;transition:transform .12s;color:#fff;
+}
+.bigbtn:hover{transform:scale(1.03)}
+.bigbtn:active{transform:scale(.97)}
+.bigbtn .ic{font-size:36px}
+.b-vocab{background:linear-gradient(135deg,#ff9ecb,#ff7ab8);box-shadow:0 6px 0 #e05a98}
+.b-math{background:linear-gradient(135deg,#7cc4ff,#4da3f5);box-shadow:0 6px 0 #3a7fc7}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.pill{background:#fff;border-radius:999px;padding:8px 16px;font-size:16px;font-weight:700;box-shadow:0 3px 8px rgba(60,90,160,.15)}
+.btn-back{
+  background:#fff;border:none;border-radius:999px;padding:10px 16px;font-size:16px;font-weight:700;
+  cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(60,90,160,.15);
+}
+.progress{height:14px;background:#e6ebff;border-radius:999px;overflow:hidden;margin-bottom:20px}
+.progress .fill{height:100%;width:0;background:linear-gradient(90deg,#ffd84d,#ffb020);border-radius:999px;transition:width .3s}
+.q-title{font-size:20px;color:#8a92b8;margin-bottom:8px}
+.bigpic{
+  font-size:110px;line-height:1.2;margin:6px 0 18px;display:block;
+  animation:pop .35s ease;
+}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.mathq{font-size:56px;font-weight:800;color:#5b63c9;margin:18px 0 22px}
+.answers{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.ans{
+  min-width:120px;flex:1;padding:16px 10px;font-size:22px;font-weight:700;font-family:inherit;
+  background:#f3f6ff;border:4px solid #dfe6ff;border-radius:18px;cursor:pointer;color:var(--ink);
+  transition:transform .12s,background .15s;
+}
+.ans:hover{transform:scale(1.05);background:#eaf0ff}
+.ans:active{transform:scale(.96)}
+.ans.correct{background:var(--ok);border-color:#2ea15c;color:#fff;animation:pop .4s}
+.ans.wrong{background:var(--bad);border-color:#d94f4f;color:#fff;animation:shake .45s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}
+  60%{transform:translateX(-6px)}80%{transform:translateX(6px)}
+}
+.stage{position:relative}
+.stage.correct-bg .card{outline-color:#a5e8c2}
+.stage.wrong-bg .card{outline-color:#ffb4b4}
+.confetti{position:fixed;pointer-events:none;z-index:99;font-size:26px;animation:fall 1.1s ease-in forwards}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(70vh) rotate(300deg);opacity:0}}
+.feedback{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;pointer-events:none}
+.feedback .bubble{
+  font-size:90px;background:#fff;border-radius:30px;padding:16px 26px;
+  box-shadow:0 12px 30px rgba(60,90,160,.3);animation:pop .35s;
+}
+.score-big{font-size:40px;font-weight:800;color:#ffb020}
+.stars{font-size:52px;letter-spacing:6px}
+.result-btn{
+  width:100%;padding:16px;margin-top:12px;font-size:22px;font-weight:700;border:none;border-radius:18px;
+  cursor:pointer;font-family:inherit;color:#fff;
+}
+.result-btn:hover{filter:brightness(1.06)}
+@media(max-width:480px){
+  h1{font-size:28px}.mathq{font-size:44px}.bigpic{font-size:88px}
+  .ans{min-width:96px;font-size:19px}
+}
+</style>
+</head>
+<body>
+<div class="cloud c1"></div><div class="cloud c2"></div>
+
+<!-- 主頁 -->
+<div class="page active" id="page-home">
+  <div class="card">
+    <div class="mascot">🦁</div>
+    <h1>小朋友學習樂園</h1>
+    <p class="sub">揀一個遊戲開始啦！每關 10 題，答啱一題有 10 分 ⭐</p>
+    <button class="bigbtn b-vocab" onclick="startVocab()"><span class="ic">🔤</span>英文生字</button>
+    <button class="bigbtn b-math" onclick="startMath()"><span class="ic">🔢</span>數學挑戰</button>
+  </div>
+</div>
+
+<!-- 英文生字模式 -->
+<div class="page" id="page-vocab">
+  <div class="card stage" id="vocab-stage">
+    <div class="topbar">
+      <button class="btn-back" onclick="goHome()">🏠 主頁</button>
+      <span class="pill">⭐ 分數：<span id="v-score">0</span></span>
+    </div>
+    <div class="progress"><div class="fill" id="v-progress"></div></div>
+    <div class="q-title">睇吓幅圖，揀啱英文生字！</div>
+    <span class="bigpic" id="v-pic">🐶</span>
+    <div class="answers" id="v-answers"></div>
+  </div>
+</div>
+
+<!-- 數學模式 -->
+<div class="page" id="page-math">
+  <div class="card stage" id="math-stage">
+    <div class="topbar">
+      <button class="btn-back" onclick="goHome()">🏠 主頁</button>
+      <span class="pill">⭐ 分數：<span id="m-score">0</span></span>
+    </div>
+    <div class="progress"><div class="fill" id="m-progress"></div></div>
+    <div class="q-title">計吓數，揀啱答案！</div>
+    <div class="mathq" id="m-q">3 + 5 = ?</div>
+    <div class="answers" id="m-answers"></div>
+  </div>
+</div>
+
+<div class="feedback" id="feedback"><div class="bubble" id="fb-bubble">🎉</div></div>
+
+<script>
+const VOCAB = [
+  {e:"🐶", w:"dog", opts:["cat","dog","pig"]},
+  {e:"🐱", w:"cat", opts:["cat","hen","cow"]},
+  {e:"🍎", w:"apple", opts:["pear","grape","apple"]},
+  {e:"🚗", w:"car", opts:["bus","car","boat"]},
+  {e:"🌙", w:"moon", opts:["moon","star","sun"]},
+  {e:"🐟", w:"fish", opts:["fish","bird","frog"]},
+  {e:"🏀", w:"ball", opts:["doll","ball","book"]},
+  {e:"🦁", w:"lion", opts:["lion","tiger","bear"]},
+  {e:"🌧️", w:"rain", opts:["snow","rain","wind"]},
+  {e:"🍌", w:"banana", opts:["orange","banana","lemon"]},
+  {e:"✈️", w:"plane", opts:["plane","train","ship"]},
+  {e:"🐰", w:"rabbit", opts:["rabbit","mouse","duck"]},
+];
+const TOTAL = 10;
+let mode = null, qList = [], qIdx = 0, score = 0, locked = false;
+
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function goHome(){
+  $("page-home").classList.add("active");
+  $("page-vocab").classList.remove("active");
+  $("page-math").classList.remove("active");
+}
+function show(page){ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); $(page).classList.add("active"); }
+
+function tone(ok){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = ok ? 660 : 220;
+    g.gain.setValueAtTime(.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .25);
+    o.start(); o.stop(ctx.currentTime + .25);
+    if(ok){
+      const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+      o2.connect(g2); g2.connect(ctx.destination);
+      o2.frequency.value = 880;
+      g2.gain.setValueAtTime(.1, ctx.currentTime + .1);
+      g2.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .3);
+      o2.start(ctx.currentTime + .1); o2.stop(ctx.currentTime + .3);
+    }
+  }catch(e){}
+}
+function confetti(){
+  const em = ["⭐","🎉","✨","🌟","💫","🎊"];
+  for(let i=0;i<14;i++){
+    const s = document.createElement("div");
+    s.className = "confetti"; s.textContent = em[Math.floor(Math.random()*em.length)];
+    s.style.left = (5 + Math.random()*90) + "vw";
+    s.style.top = "-30px";
+    s.style.animationDelay = (Math.random()*0.3) + "s";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 1600);
+  }
+}
+function flash(ok){
+  const fb = $("feedback"), b = $("fb-bubble");
+  b.textContent = ok ? "🎉" : "😅";
+  fb.style.display = "flex";
+  setTimeout(()=>{ fb.style.display = "none"; }, 500);
+}
+function feedbackOn(stage, ok){
+  tone(ok);
+  flash(ok);
+  if(ok) confetti();
+  stage.classList.add(ok ? "correct-bg" : "wrong-bg");
+  setTimeout(()=>stage.classList.remove("correct-bg","wrong-bg"), 600);
+}
+
+function startVocab(){
+  mode = "vocab"; qList = shuffle(VOCAB).slice(0, TOTAL); qIdx = 0; score = 0; locked = false;
+  $("v-score").textContent = "0";
+  show("page-vocab"); renderVocab();
+}
+function startMath(){
+  mode = "math"; qList = makeMath(); qIdx = 0; score = 0; locked = false;
+  $("m-score").textContent = "0";
+  show("page-math"); renderMath();
+}
+function makeMath(){
+  const list = [];
+  while(list.length < TOTAL){
+    const add = Math.random() < .5;
+    let a, b;
+    if(add){ a = rand(1,9); b = rand(1,9); } else { a = rand(2,18); b = rand(1,a-1); }
+    list.push({a, b, add, ans: add ? a+b : a-b});
+  }
+  return list;
+}
+function rand(lo,hi){ return Math.floor(Math.random()*(hi-lo+1))+lo; }
+
+function renderVocab(){
+  const q = qList[qIdx], pic = $("v-pic"), box = $("v-answers");
+  pic.textContent = q.e; pic.style.animation = "none"; void pic.offsetWidth; pic.style.animation = "";
+  $("v-progress").style.width = (qIdx/TOTAL*100) + "%";
+  box.innerHTML = "";
+  shuffle(q.opts).forEach(w => {
+    const b = document.createElement("button");
+    b.className = "ans"; b.textContent = w;
+    b.onclick = () => answer(b, w === q.w, "v");
+    box.appendChild(b);
+  });
+}
+function renderMath(){
+  const q = qList[qIdx];
+  $("m-q").textContent = `${q.a} ${q.add ? "+" : "−"} ${q.b} = ?`;
+  $("m-progress").style.width = (qIdx/TOTAL*100) + "%";
+  const box = $("m-answers"); box.innerHTML = "";
+  const opts = new Set([q.ans]);
+  while(opts.size < 3){ opts.add(q.ans + rand(-3,3)); }
+  shuffle([...opts]).forEach(v => {
+    const b = document.createElement("button");
+    b.className = "ans"; b.textContent = v;
+    b.onclick = () => answer(b, v === q.ans, "m");
+    box.appendChild(b);
+  });
+}
+function answer(btn, ok, which){
+  if(locked) return;
+  locked = true;
+  const stage = which === "v" ? $("vocab-stage") : $("math-stage");
+  if(ok){ score += 10; btn.classList.add("correct"); }
+  else {
+    btn.classList.add("wrong");
+    document.querySelectorAll("#" + (which==="v"?"v":"m") + "-answers .ans").forEach(b => {
+      const q = qList[qIdx];
+      const right = which==="v" ? q.w : q.ans;
+      if(b.textContent === String(right)) b.classList.add("correct");
+    });
+  }
+  feedbackOn(stage, ok);
+  $(which + "-score").textContent = score;
+  $((which==="v"?"v":"m") + "-progress").style.width = ((qIdx+1)/TOTAL*100) + "%";
+  setTimeout(() => {
+    locked = false; qIdx++;
+    if(qIdx >= TOTAL) endRound(which);
+    else (which === "v" ? renderVocab() : renderMath());
+  }, 900);
+}
+function stars(n){
+  if(n >= 100) return "⭐⭐⭐";
+  if(n >= 70) return "⭐⭐";
+  if(n >= 40) return "⭐";
+  return "";
+}
+function endRound(which){
+  const stage = which === "v" ? $("vocab-stage") : $("math-stage");
+  stage.innerHTML = `
+    <div class="mascot">${score >= 70 ? "🏆" : score >= 40 ? "😊" : "💪"}</div>
+    <h1>完成喇！</h1>
+    <div class="stars">${stars(score)}</div>
+    <div class="score-big">${score} 分</div>
+    <p class="sub">${score >= 70 ? "好叻呀！繼續加油！" : score >= 40 ? "做得唔錯，再試多一次啦！" : "加油！練習多啲就會進步！"}</p>
+    <button class="result-btn" style="background:linear-gradient(135deg,#ff9ecb,#ff7ab8);box-shadow:0 5px 0 #e05a98" onclick="${which==="v"?"startVocab":"startMath"}()">🔁 再玩一次</button>
+    <button class="result-btn" style="background:linear-gradient(135deg,#7cc4ff,#4da3f5);box-shadow:0 5px 0 #3a7fc7" onclick="goHome()">🏠 返主頁</button>`;
+}
+</script>
+</body>
+</html>

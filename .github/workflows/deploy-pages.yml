@@ -28,6 +28,8 @@ jobs:
           cp index.html _site/
           mkdir -p _site/dashboard
           cp dashboard/index.html _site/dashboard/
+          mkdir -p _site/kids-learning
+          cp kids-learning/index.html _site/kids-learning/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
