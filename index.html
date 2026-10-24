@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>待辦清單 · Todo List</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1d23;
+    --text-dim: #8a919c;
+    --text-done: #9aa2ae;
+    --border: #e6e8ec;
+    --accent: #4f6ef7;
+    --accent-soft: #eef1fe;
+    --danger: #e5484d;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 8px 24px rgba(16, 24, 40, .06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --card: #1a1d23;
+      --text: #eef0f4;
+      --text-dim: #7d8695;
+      --border: #2a2f39;
+      --accent: #6d87ff;
+      --accent-soft: #232a3d;
+      --danger: #ff6369;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    width: 100%;
+    max-width: 520px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 24px 20px;
+  }
+  .app h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .app .subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .add-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .add-row input {
+    flex: 1;
+    height: 46px;
+    padding: 0 16px;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .add-row input::placeholder { color: var(--text-dim); }
+  .add-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .add-row button {
+    height: 46px;
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: filter .15s, transform .05s;
+  }
+  .add-row button:hover { filter: brightness(1.08); }
+  .add-row button:active { transform: scale(.97); }
+  .list { list-style: none; }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 12px;
+    border-radius: 12px;
+    transition: background .15s;
+    animation: pop .18s ease;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .item:hover { background: var(--bg); }
+  .item input[type="checkbox"] {
+    appearance: none;
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    position: relative;
+    transition: background .15s, border-color .15s;
+  }
+  .item input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .item input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px; top: 2px;
+    width: 5px; height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .item .label {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.55;
+    word-break: break-word;
+    transition: color .2s;
+  }
+  .item.done .label {
+    color: var(--text-done);
+    background-image: linear-gradient(to right, var(--text-dim) 0, var(--text-dim) 100%);
+    background-repeat: no-repeat;
+    background-position: 0 55%;
+    background-size: 100% 1.5px;
+  }
+  .item .del {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    opacity: .45;
+    transition: opacity .15s, background .15s, color .15s;
+  }
+  .item:hover .del, .item .del:focus-visible { opacity: 1; }
+  .item .del:hover { background: rgba(229, 72, 77, .12); color: var(--danger); }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .empty {
+    text-align: center;
+    padding: 36px 0 28px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .empty .emoji { font-size: 30px; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<main class="app" role="main" aria-label="待辦清單">
+  <h1>待辦清單</h1>
+  <p class="subtitle">新增 · 標記完成 · 刪除 —— 自動儲存於本機</p>
+
+  <form class="add-row" id="addForm">
+    <input type="text" id="todoInput" placeholder="新增待辦事項…" maxlength="200" autocomplete="off" aria-label="新增待辦事項">
+    <button type="submit">新增</button>
+  </form>
+
+  <ul class="list" id="todoList" role="list"></ul>
+
+  <div class="empty" id="emptyState">
+    <span class="emoji">☕</span>
+    暫時冇嘢做，享受一下空閒～
+  </div>
+
+  <div class="footer">
+    <span id="counter">0 項未完成</span>
+  </div>
+</main>
+
+<script>
+  const STORAGE_KEY = "todo-list-items";
+  const listEl = document.getElementById("todoList");
+  const inputEl = document.getElementById("todoInput");
+  const emptyEl = document.getElementById("emptyState");
+  const counterEl = document.getElementById("counter");
+
+  let items = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const data = raw ? JSON.parse(raw) : [];
+      return Array.isArray(data) ? data.filter(it => it && typeof it.text === "string") : [];
+    } catch { return []; }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+  }
+
+  function render() {
+    listEl.innerHTML = "";
+    for (const it of items) {
+      const li = document.createElement("li");
+      li.className = "item" + (it.done ? " done" : "");
+      li.setAttribute("role", "listitem");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!it.done;
+      cb.setAttribute("aria-label", it.done ? "標記為未完成：" + it.text : "標記為完成：" + it.text);
+      cb.addEventListener("change", () => {
+        it.done = cb.checked;
+        save(); render();
+      });
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = it.text;
+
+      const del = document.createElement("button");
+      del.className = "del";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", "刪除：" + it.text);
+      del.addEventListener("click", () => {
+        items = items.filter(x => x !== it);
+        save(); render();
+      });
+
+      li.append(cb, label, del);
+      listEl.appendChild(li);
+    }
+    emptyEl.style.display = items.length ? "none" : "block";
+    const pending = items.filter(x => !x.done).length;
+    counterEl.textContent = pending + " 項未完成";
+  }
+
+  document.getElementById("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+    items.unshift({ text, done: false });
+    inputEl.value = "";
+    save(); render();
+    inputEl.focus();
+  });
+
+  render();
+</script>
+</body>
+</html>
