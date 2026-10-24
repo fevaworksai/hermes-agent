@@ -30,8 +30,9 @@ header p{color:var(--dim);font-size:15px;margin-top:4px}
 }
 .chip:hover{border-color:var(--brand);color:var(--brand)}
 .chip.active{background:var(--brand);border-color:var(--brand);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.grid{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
 .pcard{
+  flex:1 1 300px;max-width:370px;
   background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
   display:flex;flex-direction:column;gap:12px;transition:transform .15s,box-shadow .15s
 }
